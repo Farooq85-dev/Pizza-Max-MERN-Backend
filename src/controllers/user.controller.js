@@ -155,6 +155,12 @@ export const UpdateName = async (req, res) => {
         .send({ message: "Please enter name!" });
     }
 
+    if (name === (await req.user?.name)) {
+      return res
+        .status(StatusCodes.NOT_ACCEPTABLE)
+        .send({ message: "Please provide a new name!" });
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user?._id,
       {
@@ -183,6 +189,12 @@ export const AddAnotherEmail = async (req, res) => {
       return res
         .status(StatusCodes.NOT_ACCEPTABLE)
         .send({ message: "Please enter email!" });
+    }
+
+    if (secondaryEmail === (await req.user?.anotherEmail)) {
+      return res
+        .status(StatusCodes.NOT_ACCEPTABLE)
+        .send({ message: "Please provide a new email!" });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -222,6 +234,12 @@ export const ChangePassword = async (req, res) => {
       return res.status(StatusCodes.NOT_ACCEPTABLE).send({
         message: "Provided password is wrong. Please provide correct pasword!",
       });
+    }
+
+    if (await req.user?.isPasswordCorrect(newPassword)) {
+      return res
+        .status(StatusCodes.NOT_ACCEPTABLE)
+        .send({ message: "Please provide a new password!" });
     }
 
     req.user.password = newPassword;

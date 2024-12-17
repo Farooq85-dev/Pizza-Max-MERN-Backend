@@ -43,8 +43,8 @@ const UserModel = new Schema(
     },
     password: {
       type: String,
-      min: 8,
-      max: 12,
+      minlength: [8, "Password must be at least 8 characters long"],
+      maxlength: [12, "Password cannot exceed 12 characters long"],
       required: [true, "Password must be at least 8 to 12 characters long!"],
     },
     avatar: {
