@@ -111,8 +111,8 @@ export const LogoutUser = async (req, res) => {
 
     return res
       .status(StatusCodes.OK)
-      .cookie("accessToken", COOKIE_OPTIONS)
-      .cookie("refreshToken", COOKIE_OPTIONS)
+      .clearCookie("accessToken", COOKIE_OPTIONS)
+      .clearCookie("refreshToken", COOKIE_OPTIONS)
       .send({ logoutUser, message: "You have been logout successfully!" });
   } catch (error) {
     return res
