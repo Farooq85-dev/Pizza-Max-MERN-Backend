@@ -255,3 +255,27 @@ export const ChangePassword = async (req, res) => {
       .send({ message: error.message });
   }
 };
+
+export const DeleteAvatar = async (req, res) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $unset: {
+          avatar: 1, // Clear this field from user
+        },
+      },
+      {
+        new: true,
+      }
+    ).select("-password");
+
+    return res
+      .status(StatusCodes.OK)
+      .send({ message: "Your picture is deleted successfully!" });
+  } catch (error) {
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .send({ message: error?.message });
+  }
+};

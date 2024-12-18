@@ -7,6 +7,7 @@ import {
   RegisterUser,
   UploadAvatar,
   UpdateName,
+  DeleteAvatar,
 } from "../controllers/user.controller.js";
 import { isUserAuthenticated } from "../middlewares/auth.middleware.js";
 import { Upload } from "../middlewares/multer.middleware.js";
@@ -43,5 +44,6 @@ router.post("/is-user", isUserAuthenticated, (req, res) => {
 // Patch Routes
 router.patch("/change-password", isUserAuthenticated, ChangePassword);
 router.patch("/update-name", isUserAuthenticated, UpdateName);
+router.patch("/delete-avatar", isUserAuthenticated, DeleteAvatar);
 
 export { router };
