@@ -1,23 +1,32 @@
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
+import {
+  GetAllOrdersOfLoggedInUser,
+  PlaceOrder,
+} from "../controllers/order.controller.js";
+import { UploadController } from "../controllers/upload.controller.js";
 import {
   AddAnotherEmail,
   ChangePassword,
+  DeleteAvatar,
   LoginUser,
   LogoutUser,
   RegisterUser,
-  UploadAvatar,
   UpdateName,
-  DeleteAvatar,
+  UploadAvatar,
 } from "../controllers/user.controller.js";
 import { isUserAuthenticated } from "../middlewares/auth.middleware.js";
 import { Upload } from "../middlewares/multer.middleware.js";
-import { UploadController } from "../controllers/upload.controller.js";
-import { StatusCodes } from "http-status-codes";
+import {
+  AddProduct,
+  GetAllProducts,
+  GetAllProductsCategories,
+} from "../controllers/product.controller.js";
 
 //Creating Router For All Requests
 const router = Router();
 
-// Post Routes
+// User Post Routes
 router.post("/register-user", RegisterUser);
 router.post("/login-user", LoginUser);
 router.post("/logout-user", isUserAuthenticated, LogoutUser);
@@ -41,9 +50,27 @@ router.post("/is-user", isUserAuthenticated, (req, res) => {
   }
 });
 
-// Patch Routes
+// User Patch Routes
 router.patch("/change-password", isUserAuthenticated, ChangePassword);
 router.patch("/update-name", isUserAuthenticated, UpdateName);
 router.patch("/delete-avatar", isUserAuthenticated, DeleteAvatar);
+
+// Order Post Routes
+router.post("/place-order", isUserAuthenticated, PlaceOrder);
+router.post(
+  "/get-all-order-single-user",
+  isUserAuthenticated,
+  GetAllOrdersOfLoggedInUser
+);
+
+// Product Post Routes
+router.post(
+  "/add-product",
+  Upload.single("productImage"),
+  UploadController,
+  AddProduct
+);
+router.post("/get-all-products-categories", GetAllProductsCategories);
+router.post("/get-all-products", GetAllProducts);
 
 export { router };
