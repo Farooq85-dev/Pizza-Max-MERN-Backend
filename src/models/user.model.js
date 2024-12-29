@@ -49,7 +49,6 @@ const UserModel = new Schema(
     },
     avatar: {
       type: String,
-      default: "sadasdasd",
     },
     refreshToken: {
       type: String,
