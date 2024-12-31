@@ -53,6 +53,10 @@ const UserModel = new Schema(
     refreshToken: {
       type: String,
     },
+    role: {
+      type: String,
+      default: "user",
+    },
   },
   {
     timestamps: true,
