@@ -11,8 +11,8 @@ export const isUserAuthenticated = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(StatusCodes.NOT_FOUND)
-        .send({ message: "Token not found. Please login!" });
+        .status(StatusCodes.UNAUTHORIZED)
+        .send({ message: "Access token is required. Please login!" });
     }
 
     let decodedToken;
@@ -21,25 +21,35 @@ export const isUserAuthenticated = async (req, res, next) => {
     } catch (error) {
       if (error.name === "TokenExpiredError") {
         return res.status(StatusCodes.UNAUTHORIZED).send({
-          message: "Your token has expired. Please sign in again!",
+          message: "Token expired. Please login again!",
         });
       }
       return res.status(StatusCodes.UNAUTHORIZED).send({
-        message: "Invalid token. Please sign in again!",
+        message: "Invalid token. Please login again!",
       });
     }
 
-    const user = await User.findById(decodedToken?.id);
+    let user;
+    try {
+      user = await User.findById(decodedToken?.id);
+    } catch (dbError) {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
+        message: "Error fetching user data. Please try again later!",
+      });
+    }
 
     if (!user) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .send({ message: "Invalid token!" });
+        .send({ message: "User not found. Invalid token!" });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    throw new Error(error.message);
+    console.error("Authentication error:", error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .send({ message: "An unexpected error occurred. Please try again!" });
   }
 };

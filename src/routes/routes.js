@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import {
+  GetAllOrders,
   GetAllOrdersOfLoggedInUser,
+  GetSingleOrderById,
   PlaceOrder,
+  UpdateOrderById,
 } from "../controllers/order.controller.js";
 import { UploadController } from "../controllers/upload.controller.js";
 import {
@@ -62,6 +65,12 @@ router.post(
   isUserAuthenticated,
   GetAllOrdersOfLoggedInUser
 );
+// Admin Post Routes
+router.post("/get-all-orders", isUserAuthenticated, GetAllOrders);
+router.post("/get-order-by-id", isUserAuthenticated, GetSingleOrderById);
+
+// Admin Patch Routes
+router.patch("/update-order", isUserAuthenticated, UpdateOrderById);
 
 // Product Post Routes
 router.post(
