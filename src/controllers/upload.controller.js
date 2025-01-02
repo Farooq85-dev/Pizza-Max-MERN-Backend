@@ -16,17 +16,28 @@ cloudinary.config({
 
 export const UploadController = async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
+    if (!req?.file) {
+      return res.status(StatusCodes.NOT_ACCEPTABLE).send({
         message: "Please provide a file!",
       });
     }
 
+    if (req?.file?.mimetype !== "image/webp") {
+      return res.status(StatusCodes.NOT_ACCEPTABLE).send({
+        message: "File must be in WEBP Format!",
+      });
+    }
+
+    // if (req?.file?.size > 100000) {
+    //   return res.status(StatusCodes.NOT_ACCEPTABLE).send({
+    //     message: "File must be lower than 100 KB!",
+    //   });
+    // }
+
     const filePath = path.join(req.file.destination, req.file.filename);
 
-    // Upload to Cloudinary with conversion to WEBP format
     const uploadResult = await cloudinary.uploader.upload(filePath, {
-      folder: "MY-IMAGES",
+      folder: "Pizza-Max-App",
       transformation: [
         { width: 800, crop: "scale" },
         { fetch_format: "webp" },
@@ -34,16 +45,13 @@ export const UploadController = async (req, res, next) => {
       ],
     });
 
-    // Cleanup: Remove the file from the local uploads folder after uploading to Cloudinary
     fs.unlinkSync(filePath);
 
-    // Attach the file URL to req.body for where you eant to use
     req.image = uploadResult;
     next();
   } catch (error) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-      status: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: error.message,
-    });
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .send({ message: error.message });
   }
 };

@@ -3,9 +3,13 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { router } from "./routes/routes.js";
 import { allowedOrigins } from "./env/secrets.js";
+import helmet from "helmet";
+import morgan from "morgan";
 
 // Creating Express App
 const app = express();
+app.use(helmet());
+app.use(morgan("dev"));
 
 // Using Cors To Allow Request From Only Allowed Origins
 app.use(

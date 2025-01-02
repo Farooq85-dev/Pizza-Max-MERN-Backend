@@ -1,6 +1,18 @@
 import { StatusCodes } from "http-status-codes";
 import { COOKIE_OPTIONS } from "../constants.js";
 import { User } from "../models/user.model.js";
+import { v2 as cloudinary } from "cloudinary";
+import {
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_CLOUD_NAME,
+} from "../env/secrets.js";
+
+cloudinary.config({
+  cloud_name: CLOUDINARY_CLOUD_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
+});
 
 const assignAccessAndRefereshTokens = async (userId) => {
   try {
@@ -124,7 +136,14 @@ export const LogoutUser = async (req, res) => {
 export const UploadAvatar = async (req, res) => {
   try {
     const { image } = req;
-    const updatedUser = await User.findByIdAndUpdate(
+
+    if (req?.user?.avatar) {
+      return res
+        .status(StatusCodes.NOT_ACCEPTABLE)
+        .send({ message: "Please delete your previous image first!" });
+    }
+
+    await User.findByIdAndUpdate(
       req.user?._id,
       {
         $set: {
@@ -134,11 +153,11 @@ export const UploadAvatar = async (req, res) => {
       {
         new: true,
       }
-    ).select("-password");
+    );
 
     return res
       .status(StatusCodes.OK)
-      .send({ updatedUser, message: "Your image is uplaoded!" });
+      .send({ message: "Your image is uplaoded!" });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -258,7 +277,26 @@ export const ChangePassword = async (req, res) => {
 
 export const DeleteAvatar = async (req, res) => {
   try {
-    const updatedUser = await User.findByIdAndUpdate(
+    const { avatarPublicId } = req.body;
+
+    const match = avatarPublicId.match(/\/([^\/]+)\/([^\/]+)\.webp$/);
+    if (match && match[1] && match[2]) {
+      const folderName = match[1];
+      const fileName = match[2];
+      const id = `${folderName}/${fileName}`;
+
+      const result = await cloudinary.uploader.destroy(id, {
+        invalidate: true,
+      });
+
+      if (result.result === "not found") {
+        return res.status(StatusCodes.NOT_FOUND).send({
+          message: "Invalid avatar!",
+        });
+      }
+    }
+
+    await User.findByIdAndUpdate(
       req.user?._id,
       {
         $unset: {
@@ -292,4 +330,3 @@ export const GetAllUsers = async (req, res) => {
     return res.status(StatusCodes.OK).send({ message: error?.message });
   }
 };
-
