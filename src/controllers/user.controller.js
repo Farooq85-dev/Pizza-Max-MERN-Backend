@@ -279,3 +279,17 @@ export const DeleteAvatar = async (req, res) => {
       .send({ message: error?.message });
   }
 };
+
+// Admin
+export const GetAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+
+    return res
+      .status(StatusCodes.OK)
+      .send({ users, message: "Users fetched successfully!" });
+  } catch (error) {
+    return res.status(StatusCodes.OK).send({ message: error?.message });
+  }
+};
+

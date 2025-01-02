@@ -56,6 +56,12 @@ const UserModel = new Schema(
     role: {
       type: String,
       default: "user",
+      enum: ["user", "admin"],
+    },
+    isVerfified: {
+      type: Boolean,
+      default: false,
+      enum: [true, false],
     },
   },
   {

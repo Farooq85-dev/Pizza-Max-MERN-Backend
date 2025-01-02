@@ -12,6 +12,7 @@ import {
   AddAnotherEmail,
   ChangePassword,
   DeleteAvatar,
+  GetAllUsers,
   LoginUser,
   LogoutUser,
   RegisterUser,
@@ -52,6 +53,7 @@ router.post("/is-user", isUserAuthenticated, (req, res) => {
       .send({ message: error.message });
   }
 });
+router.post("/get-all-users", isUserAuthenticated, GetAllUsers);
 
 // User Patch Routes
 router.patch("/change-password", isUserAuthenticated, ChangePassword);
