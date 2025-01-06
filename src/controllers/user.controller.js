@@ -1,13 +1,19 @@
+// Libraries Imports
 import { StatusCodes } from "http-status-codes";
-import { COOKIE_OPTIONS } from "../constants.js";
-import { User } from "../models/user.model.js";
 import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
+
+// Local Imports
+import { COOKIE_OPTIONS, userRoles } from "../constants.js";
+import { User } from "../models/user.model.js";
 import {
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET,
   CLOUDINARY_CLOUD_NAME,
-} from "../env/secrets.js";
+} from "../secrets/secrets.js";
 
+// Cloudinary Configs
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
   api_key: CLOUDINARY_API_KEY,
@@ -17,8 +23,8 @@ cloudinary.config({
 const assignAccessAndRefereshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = user.assignAccessToken();
-    const refreshToken = user.assignRefreshToken();
+    const accessToken = user?.assignAccessToken();
+    const refreshToken = user?.assignRefreshToken();
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
@@ -38,7 +44,7 @@ export const RegisterUser = async (req, res) => {
 
     if (!name || !email || !password) {
       return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
+        .status(StatusCodes.BAD_REQUEST)
         .send({ message: "Something is missing!" });
     }
 
@@ -46,7 +52,7 @@ export const RegisterUser = async (req, res) => {
 
     if (isUserAlreadyExist) {
       return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
+        .status(StatusCodes.BAD_REQUEST)
         .send({ message: "You are already resgistered. Please Login!" });
     }
 
@@ -68,7 +74,7 @@ export const LoginUser = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
       return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
+        .status(StatusCodes.BAD_REQUEST)
         .send({ message: "Something is missing!" });
     }
     const user = await User.findOne({ email });
@@ -79,10 +85,10 @@ export const LoginUser = async (req, res) => {
       });
     }
 
-    const isPasswordValid = await user.isPasswordCorrect(password);
+    const isPasswordValid = await user?.isPasswordCorrect(password);
 
     if (!isPasswordValid) {
-      return res.status(StatusCodes.NOT_ACCEPTABLE).send({
+      return res.status(StatusCodes.BAD_REQUEST).send({
         message:
           "Provided password is not correct. Please provide correct password!",
       });
@@ -91,6 +97,7 @@ export const LoginUser = async (req, res) => {
     const { accessToken, refreshToken } = await assignAccessAndRefereshTokens(
       user._id
     );
+
     return res
       .status(StatusCodes.OK)
       .cookie("accessToken", accessToken, COOKIE_OPTIONS)
@@ -98,8 +105,6 @@ export const LoginUser = async (req, res) => {
       .send({
         user,
         message: "You have been login successfully!",
-        accessToken,
-        refreshToken,
       });
   } catch (error) {
     console.log(error.message);
@@ -111,8 +116,14 @@ export const LoginUser = async (req, res) => {
 
 export const LogoutUser = async (req, res) => {
   try {
-    const logoutUser = await User.findByIdAndUpdate(
-      req.user._id,
+    if (!userRoles.includes(req?.user?.role)) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
+
+    await User.findByIdAndUpdate(
+      req?.user?._id,
       {
         $unset: {
           refreshToken: 1, // Clear field from this user
@@ -125,7 +136,50 @@ export const LogoutUser = async (req, res) => {
       .status(StatusCodes.OK)
       .clearCookie("accessToken", COOKIE_OPTIONS)
       .clearCookie("refreshToken", COOKIE_OPTIONS)
-      .send({ logoutUser, message: "You have been logout successfully!" });
+      .send({ message: "You have been logout successfully!" });
+  } catch (error) {
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .send({ message: error.message });
+  }
+};
+
+export const ChangePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!userRoles.includes(req?.user?.role)) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
+
+    if (!currentPassword || !newPassword) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .send({ message: "Something is missing!" });
+    }
+
+    const isPasswordValid = await req?.user?.isPasswordCorrect(currentPassword);
+
+    if (!isPasswordValid) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Provided password is wrong. Please provide correct pasword!",
+      });
+    }
+
+    if (await req.user?.isPasswordCorrect(newPassword)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .send({ message: "Please provide a new password!" });
+    }
+
+    req.user.password = newPassword;
+    await req.user.save();
+
+    return res.status(StatusCodes.OK).send({
+      message: "Your password is changed successfully!",
+    });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -135,19 +189,35 @@ export const LogoutUser = async (req, res) => {
 
 export const UploadAvatar = async (req, res) => {
   try {
-    const { image } = req;
+    if (!userRoles.includes(req?.user?.role)) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
 
     if (req?.user?.avatar) {
       return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
+        .status(StatusCodes.BAD_REQUEST)
         .send({ message: "Please delete your previous image first!" });
     }
+
+    const filePath = path.join(req?.file?.destination, req?.file?.filename);
+    const uploadResult = await cloudinary.uploader.upload(filePath, {
+      folder: "Pizza-Max-App",
+      transformation: [
+        { width: 800, crop: "scale" },
+        { fetch_format: "webp" },
+        { quality: "auto:low" },
+      ],
+    });
+
+    fs.unlinkSync(filePath);
 
     await User.findByIdAndUpdate(
       req.user?._id,
       {
         $set: {
-          avatar: image?.url,
+          avatar: uploadResult?.url,
         },
       },
       {
@@ -168,31 +238,34 @@ export const UploadAvatar = async (req, res) => {
 export const UpdateName = async (req, res) => {
   try {
     const { name } = req.body;
+
+    if (!userRoles.includes(req?.user?.role)) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
+
     if (!name) {
       return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
+        .status(StatusCodes.BAD_REQUEST)
         .send({ message: "Please enter name!" });
     }
 
-    if (name === (await req.user?.name)) {
+    if (name === (await req?.user?.name)) {
       return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
+        .status(StatusCodes.BAD_REQUEST)
         .send({ message: "Please provide a new name!" });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user?._id,
-      {
-        $set: {
-          name: name,
-        },
+    await User.findByIdAndUpdate(req?.user?._id, {
+      $set: {
+        name: name,
       },
-      { new: true }
-    ).select("-password");
+    });
 
     return res
       .status(StatusCodes.OK)
-      .send({ updatedUser, message: "Your name is saved successfully!" });
+      .send({ message: "Your name is saved successfully!" });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -204,70 +277,32 @@ export const AddAnotherEmail = async (req, res) => {
   try {
     const { secondaryEmail } = req.body;
 
-    if (!secondaryEmail) {
-      return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
-        .send({ message: "Please enter email!" });
-    }
-
-    if (secondaryEmail === (await req.user?.anotherEmail)) {
-      return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
-        .send({ message: "Please provide a new email!" });
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user?._id,
-      {
-        $set: {
-          anotherEmail: secondaryEmail,
-        },
-      },
-      {
-        new: true,
-      }
-    ).select("-password");
-    return res
-      .status(StatusCodes.OK)
-      .send({ updatedUser, message: "You email is saved successfully!" });
-  } catch (error) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error.message });
-  }
-};
-
-export const ChangePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
-        .send({ message: "Something is missing!" });
-    }
-
-    const isPasswordValid = await req.user.isPasswordCorrect(currentPassword);
-
-    if (!isPasswordValid) {
-      return res.status(StatusCodes.NOT_ACCEPTABLE).send({
-        message: "Provided password is wrong. Please provide correct pasword!",
+    if (!userRoles.includes(req?.user?.role)) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
       });
     }
 
-    if (await req.user?.isPasswordCorrect(newPassword)) {
+    if (!secondaryEmail) {
       return res
-        .status(StatusCodes.NOT_ACCEPTABLE)
-        .send({ message: "Please provide a new password!" });
+        .status(StatusCodes.BAD_REQUEST)
+        .send({ message: "Please enter email!" });
     }
 
-    req.user.password = newPassword;
-    const modifiedUser = await req.user.save();
+    if (secondaryEmail === (await req?.user?.anotherEmail)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .send({ message: "Please provide a new email!" });
+    }
 
-    return res.status(StatusCodes.OK).send({
-      modifiedUser,
-      message: "Your password is changed successfully!",
+    await User.findByIdAndUpdate(req.user?._id, {
+      $set: {
+        anotherEmail: secondaryEmail,
+      },
     });
+    return res
+      .status(StatusCodes.OK)
+      .send({ message: "You email is saved successfully!" });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -278,6 +313,18 @@ export const ChangePassword = async (req, res) => {
 export const DeleteAvatar = async (req, res) => {
   try {
     const { avatarPublicId } = req.body;
+
+    if (!userRoles.includes(req?.user?.role)) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
+
+    if (!avatarPublicId) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Something is missing!",
+      });
+    }
 
     const match = avatarPublicId.match(/\/([^\/]+)\/([^\/]+)\.webp$/);
     if (match && match[1] && match[2]) {
@@ -296,17 +343,11 @@ export const DeleteAvatar = async (req, res) => {
       }
     }
 
-    await User.findByIdAndUpdate(
-      req.user?._id,
-      {
-        $unset: {
-          avatar: 1, // Clear this field from user
-        },
+    await User.findByIdAndUpdate(req?.user?._id, {
+      $unset: {
+        avatar: 1, // Clear this field from user
       },
-      {
-        new: true,
-      }
-    ).select("-password");
+    });
 
     return res
       .status(StatusCodes.OK)
@@ -321,6 +362,12 @@ export const DeleteAvatar = async (req, res) => {
 // Admin
 export const GetAllUsers = async (req, res) => {
   try {
+    if (req?.user?.role !== "admin") {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
+
     const users = await User.find().select("-password");
 
     return res

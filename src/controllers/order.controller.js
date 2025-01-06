@@ -1,4 +1,7 @@
+// Libraries Imports
 import { StatusCodes } from "http-status-codes";
+
+// Local Imports
 import { Order } from "../models/order.model.js";
 
 export const PlaceOrder = async (req, res) => {
@@ -17,6 +20,12 @@ export const PlaceOrder = async (req, res) => {
       grandTotal,
       products,
     } = req.body;
+
+    if (!userRoles.includes(req?.user?.role)) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
 
     if (
       !userId ||
@@ -51,6 +60,12 @@ export const PlaceOrder = async (req, res) => {
 
 export const GetAllOrdersOfLoggedInUser = async (req, res) => {
   try {
+    if (req?.user?.role !== "user") {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
+
     const orders = await Order.find({ userId: req?.user?._id });
 
     return res
@@ -64,10 +79,15 @@ export const GetAllOrdersOfLoggedInUser = async (req, res) => {
 };
 
 // Admin
-export const GetAllOrders = async (_, res) => {
+export const GetAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find();
+    if (req?.user?.role !== "admin") {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
 
+    const orders = await Order.find();
     return res
       .status(StatusCodes.OK)
       .send({ orders, message: "Orders fetched successfully!" });
@@ -80,13 +100,21 @@ export const GetAllOrders = async (_, res) => {
 
 export const GetSingleOrderById = async (req, res) => {
   try {
-    const { id } = req.body;
-    if (!id) {
+    const { orderId } = req.params;
+
+    if (req?.user?.role !== "admin") {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
+
+    if (!orderId) {
       return res
         .status(StatusCodes.NOT_ACCEPTABLE)
-        .send({ message: "Please provide id of this order!" });
+        .send({ message: "Something is missing!" });
     }
-    const order = await Order.findById(id);
+
+    const order = await Order.findById(orderId);
 
     return res
       .status(StatusCodes.OK)
@@ -100,15 +128,22 @@ export const GetSingleOrderById = async (req, res) => {
 
 export const UpdateOrderById = async (req, res) => {
   try {
-    const { status, id } = req.body;
+    const { status } = req.body;
+    const { orderId } = req.params;
 
-    if (!status || !id) {
+    if (req?.user?.role !== "admin") {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
+    }
+
+    if (!status || !orderId) {
       return res
         .status(StatusCodes.NOT_ACCEPTABLE)
         .send({ message: "Something is missing!" });
     }
 
-    const updatedOrder = await Order.findByIdAndUpdate(id, {
+    await Order.findByIdAndUpdate(orderId, {
       $set: {
         status,
       },
@@ -116,7 +151,7 @@ export const UpdateOrderById = async (req, res) => {
 
     return res
       .status(StatusCodes.OK)
-      .send({ updatedOrder, message: "Order is updated successfully!" });
+      .send({ message: "Order is updated successfully!" });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)

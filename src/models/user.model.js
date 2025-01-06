@@ -1,13 +1,16 @@
+// Libraries Imports
 import mongoose from "mongoose";
 import { model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+
+// Local Imports
 import {
   ACCESS_TOKEN_EXPIRY,
   ACCESS_TOKEN_SECRET,
   REFRESH_TOKEN_EXPIRY,
   REFRESH_TOKEN_SECRET,
-} from "../env/secrets.js";
+} from "../secrets/secrets.js";
 
 const UserModel = new Schema(
   {

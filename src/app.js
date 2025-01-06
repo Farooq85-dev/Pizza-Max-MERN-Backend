@@ -1,14 +1,21 @@
+// Libraries Imports
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { router } from "./routes/routes.js";
-import { allowedOrigins } from "./env/secrets.js";
 import helmet from "helmet";
 import morgan from "morgan";
 
+// Local Imports
+import { router } from "./routes/routes.js";
+import { allowedOrigins } from "./secrets/secrets.js";
+
 // Creating Express App
 const app = express();
+
+// Using Hemlet To Ensure Security
 app.use(helmet());
+
+// Using Morgan To View Logs in Better Way
 app.use(morgan("dev"));
 
 // Using Cors To Allow Request From Only Allowed Origins
@@ -37,5 +44,5 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 //Creating Main Route For All Request
 app.use("/api/v1/", router);
 
-// Exporting App
+// Exporting Main App
 export { app };

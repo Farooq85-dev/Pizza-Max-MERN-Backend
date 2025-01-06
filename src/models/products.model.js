@@ -1,3 +1,4 @@
+// Libraries Imports
 import mongoose, { model, Schema } from "mongoose";
 
 const productSchema = Schema(

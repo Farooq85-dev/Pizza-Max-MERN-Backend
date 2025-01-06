@@ -1,3 +1,4 @@
+// Libraries Imports
 import mongoose, { model, Schema } from "mongoose";
 
 const OrderSchema = new Schema(
@@ -53,7 +54,7 @@ const OrderSchema = new Schema(
     },
     deliveryPreference: {
       type: Number,
-      enum: [100, 200, 250], 
+      enum: [100, 200, 250],
       default: 100,
     },
     subtotal: {

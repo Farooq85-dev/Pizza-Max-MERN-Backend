@@ -1,9 +1,12 @@
+// Libraries Imports
 import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
-import { ACCESS_TOKEN_SECRET } from "../env/secrets.js";
+
+// Local Imports
+import { ACCESS_TOKEN_SECRET } from "../secrets/secrets.js";
 import { User } from "../models/user.model.js";
 
-export const isUserAuthenticated = async (req, res, next) => {
+const IsUserAuthenticated = async (req, res, next) => {
   try {
     const token =
       req.cookies?.accessToken ||
@@ -53,3 +56,5 @@ export const isUserAuthenticated = async (req, res, next) => {
       .send({ message: "An unexpected error occurred. Please try again!" });
   }
 };
+
+export default IsUserAuthenticated;

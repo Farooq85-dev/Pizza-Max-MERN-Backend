@@ -1,3 +1,4 @@
+// Libraries Imports
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -19,6 +20,6 @@ const storage = multer.diskStorage({
   },
 });
 
-const Upload = multer({ storage: storage });
+const Multer = multer({ storage: storage });
 
-export { Upload };
+export default Multer;
