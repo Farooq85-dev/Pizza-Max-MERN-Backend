@@ -103,7 +103,6 @@ export const LoginUser = async (req, res) => {
       .cookie("accessToken", accessToken, COOKIE_OPTIONS)
       .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
       .send({
-        user,
         message: "You have been login successfully!",
       });
   } catch (error) {

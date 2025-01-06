@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 
 // Local Imports
 import { Order } from "../models/order.model.js";
+import { userRoles } from "../constants.js";
 
 export const PlaceOrder = async (req, res) => {
   try {
@@ -45,6 +46,8 @@ export const PlaceOrder = async (req, res) => {
         .status(StatusCodes.NOT_ACCEPTABLE)
         .send({ message: "Something is missing!" });
     }
+
+    console.log(req?.body);
 
     const order = await Order.create(req.body);
 

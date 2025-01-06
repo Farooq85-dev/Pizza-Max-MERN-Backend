@@ -17,7 +17,6 @@ cloudinary.config({
   api_key: CLOUDINARY_API_KEY,
   api_secret: CLOUDINARY_API_SECRET,
 });
-
 import { Product } from "../models/products.model.js";
 
 export const GetAllCategories = async (req, res) => {
@@ -62,11 +61,9 @@ export const AddProduct = async (req, res) => {
     const { name, description, price, stock, categoryName } = req.body;
 
     if (req?.user?.role !== "admin") {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .send({
-          message: "Permission denied you do not have the required role!",
-        });
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
     }
 
     if (!name || !description || !price || !stock || !categoryName) {
@@ -105,11 +102,9 @@ export const AddProduct = async (req, res) => {
 export const GetAllProducts = async (req, res) => {
   try {
     if (req?.user?.role !== "admin") {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .send({
-          message: "Permission denied you do not have the required role!",
-        });
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
     }
 
     const products = await Product.find();
@@ -130,11 +125,9 @@ export const GetProductById = async (req, res) => {
     const { productId } = req.params;
 
     if (req?.user?.role !== "admin") {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .send({
-          message: "Permission denied you do not have the required role!",
-        });
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
     }
 
     if (!productId) {
@@ -168,11 +161,9 @@ export const UpdateProductById = async (req, res) => {
     const { productId } = req.params;
 
     if (req?.user?.role !== "admin") {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .send({
-          message: "Permission denied you do not have the required role!",
-        });
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
     }
 
     if (!productId) {
@@ -214,11 +205,9 @@ export const DeleteProductById = async (req, res) => {
     const { productId } = req.params;
 
     if (req?.user?.role !== "admin") {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .send({
-          message: "Permission denied you do not have the required role!",
-        });
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: "Permission denied you do not have the required role!",
+      });
     }
 
     if (!productId) {
