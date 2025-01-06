@@ -26,11 +26,11 @@ const productRouter = Router();
 productRouter.get("/categories", GetAllCategories);
 
 // GET: Get all products based on categories
-productRouter.get("/products", GetAllProductsBasedOnCategories);
+productRouter.get("/products/:categoryName", GetAllProductsBasedOnCategories);
 
 // POST: Admin route to add a new product
 productRouter.post(
-  "/admin/add",
+  "/admin/product/add",
   IsUserAuthenticated,
   Multer.single("productImage"),
   FileUplaoder,
@@ -41,7 +41,7 @@ productRouter.post(
 productRouter.get("/admin/products", IsUserAuthenticated, GetAllProducts);
 
 // GET: Admin route to get a single product by ID
-productRouter.get("/admin/:productId", IsUserAuthenticated, GetProductById);
+productRouter.get("/admin/product/:productId", IsUserAuthenticated, GetProductById);
 
 // GET: Admin route to Update product by ID
 productRouter.put(

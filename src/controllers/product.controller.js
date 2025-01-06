@@ -33,8 +33,9 @@ export const GetAllCategories = async (req, res) => {
 };
 
 export const GetAllProductsBasedOnCategories = async (req, res) => {
-  const { categoryName } = req.body;
   try {
+    const { categoryName } = req.params;
+
     if (!categoryName) {
       return res
         .status(StatusCodes.BAD_REQUEST)
@@ -140,12 +141,12 @@ export const GetProductById = async (req, res) => {
 
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).send({
-        product,
         message: "Product not found!",
       });
     }
 
     return res.status(StatusCodes.OK).send({
+      product,
       message: "Product founded successfully!",
     });
   } catch (error) {
