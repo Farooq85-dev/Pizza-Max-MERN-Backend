@@ -1,6 +1,3 @@
-// Creating Db Name
-const DB_NAME = "Pizza-Max";
-
 // User Roles
 const userRoles = ["user", "admin"];
 
@@ -11,4 +8,4 @@ const COOKIE_OPTIONS = {
   sameSite: "None",
 };
 
-export { DB_NAME, userRoles, COOKIE_OPTIONS };
+export { userRoles, COOKIE_OPTIONS };
