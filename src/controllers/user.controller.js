@@ -319,7 +319,7 @@ export const DeleteAvatar = async (req, res) => {
       });
     }
 
-    if (!avatarPublicId) {
+    if (!avatarPublicId || typeof avatarPublicId !== "string") {
       return res.status(StatusCodes.BAD_REQUEST).send({
         message: "Something is missing!",
       });
