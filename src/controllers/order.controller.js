@@ -7,14 +7,13 @@ import { userRoles } from "../constants.js";
 
 export const PlaceOrder = async (req, res) => {
   try {
-    const {
+    let {
       userId,
       fullName,
       contactNumber,
       emailAddress,
       address,
       promoCode,
-      specialMessage,
       deliveryPreference,
       subtotal,
       deliveryCharges,
@@ -35,7 +34,6 @@ export const PlaceOrder = async (req, res) => {
       !emailAddress ||
       !address ||
       !promoCode ||
-      !specialMessage ||
       !deliveryPreference ||
       !subtotal ||
       !deliveryCharges ||
@@ -47,17 +45,25 @@ export const PlaceOrder = async (req, res) => {
         .send({ message: "Something is missing!" });
     }
 
-    console.log(req?.body);
+    if (deliveryPreference === 100) {
+      deliveryPreference = "standard";
+    } else if (deliveryPreference === 200) {
+      deliveryPreference = "express";
+    } else if (deliveryPreference === 250) {
+      deliveryPreference = "same day";
+    }
 
-    const order = await Order.create(req.body);
-
+    const order = await Order.create({
+      ...req.body,
+      deliveryPreference: deliveryPreference,
+    });
     return res
       .status(StatusCodes.CREATED)
       .send({ order, message: "Your order is placed successfully!" });
   } catch (error) {
     return res
-      .status(StatusCodes.CREATED)
-      .send({ message: "Your order is placed successfully!" });
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .send({ message: error?.message });
   }
 };
 

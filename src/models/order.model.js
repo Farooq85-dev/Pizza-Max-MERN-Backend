@@ -53,9 +53,9 @@ const OrderSchema = new Schema(
       trim: true,
     },
     deliveryPreference: {
-      type: Number,
-      enum: [100, 200, 250],
-      default: 100,
+      type: String,
+      enum: ["standard", "express", "same day"],
+      default: "standard",
     },
     subtotal: {
       type: Number,
