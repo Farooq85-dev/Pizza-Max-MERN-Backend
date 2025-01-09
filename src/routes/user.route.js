@@ -40,7 +40,7 @@ userRouter.post("/login", LoginUser);
 userRouter.post("/logout", IsUserAuthenticated, LogoutUser);
 
 // GET: Chechk if user is true or false
-userRouter.get("/isUser", IsUserAuthenticated, IsUserExist);
+userRouter.get("/authenticate", IsUserAuthenticated, IsUserExist);
 
 // GET: Admin route to get all registered users
 userRouter.get("/admin/users", IsUserAuthenticated, GetAllUsers);
