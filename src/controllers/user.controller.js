@@ -59,7 +59,7 @@ export const RegisterUser = async (req, res) => {
     const user = await User.create(req.body);
 
     return res
-      .status(StatusCodes.CREATED)
+      .status(StatusCodes.OK)
       .send({ user, message: "User registered successfully!" });
   } catch (error) {
     console.log(error.message);
@@ -188,6 +188,7 @@ export const ChangePassword = async (req, res) => {
 
 export const UploadAvatar = async (req, res) => {
   try {
+    console.log(req.uploadedFiles);
     if (!userRoles.includes(req?.user?.role)) {
       return res.status(StatusCodes.BAD_REQUEST).send({
         message: "Permission denied you do not have the required role!",

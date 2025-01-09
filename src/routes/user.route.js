@@ -22,8 +22,10 @@ import IsUserAuthenticated from "../middlewares/auth.middleware.js";
 import IsUserExist from "../middlewares/isUser.middleware.js";
 // Upload Moddliware
 import Multer from "../middlewares/multer.middleware.js";
-// File Uploader
+// File Uploader Middleware
 import FileUplaoder from "../middlewares/file.middleware.js";
+// Files Cleanup Middleware
+import FilesCleanup from "../middlewares/filesCleanup.middleware.js";
 
 // Mini User Router
 const userRouter = Router();
@@ -58,6 +60,7 @@ userRouter.post(
   IsUserAuthenticated,
   Multer.single("userAvatar"),
   FileUplaoder,
+  FilesCleanup,
   UploadAvatar
 );
 

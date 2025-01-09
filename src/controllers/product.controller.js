@@ -90,7 +90,7 @@ export const AddProduct = async (req, res) => {
       image: uploadResult?.url,
     });
 
-    return res.status(StatusCodes.CREATED).send({
+    return res.status(StatusCodes.OK).send({
       message: "Product added successfully!",
     });
   } catch (error) {

@@ -18,6 +18,8 @@ import IsUserAuthenticated from "../middlewares/auth.middleware.js";
 import Multer from "../middlewares/multer.middleware.js";
 // File Uploader
 import FileUplaoder from "../middlewares/file.middleware.js";
+// Files Cleanup Middleware
+import FilesCleanup from "../middlewares/filesCleanup.middleware.js";
 
 // Mini Product Router
 const productRouter = Router();
@@ -34,6 +36,7 @@ productRouter.post(
   IsUserAuthenticated,
   Multer.single("productImage"),
   FileUplaoder,
+  FilesCleanup,
   AddProduct
 );
 
@@ -41,7 +44,11 @@ productRouter.post(
 productRouter.get("/admin/products", IsUserAuthenticated, GetAllProducts);
 
 // GET: Admin route to get a single product by ID
-productRouter.get("/admin/product/:productId", IsUserAuthenticated, GetProductById);
+productRouter.get(
+  "/admin/product/:productId",
+  IsUserAuthenticated,
+  GetProductById
+);
 
 // GET: Admin route to Update product by ID
 productRouter.put(
