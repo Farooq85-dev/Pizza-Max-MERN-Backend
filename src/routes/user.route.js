@@ -1,5 +1,7 @@
 // Libraries Imports
 import { Router } from "express";
+import { rateLimit } from "express-rate-limit";
+import { StatusCodes } from "http-status-codes";
 
 // Local Imports
 
@@ -30,11 +32,20 @@ import FilesCleanup from "../middlewares/filesCleanup.middleware.js";
 // Mini User Router
 const userRouter = Router();
 
+const LoginLimiter = rateLimit({
+  windowMs: 2 * 60 * 1000, // 5 minutes
+  limit: 3, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+  standardHeaders: "draft-8", // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
+  statusCode: StatusCodes.TOO_MANY_REQUESTS, // Status Code for Too Many Requests
+  message: "Too many requests. Please try again after 2 minutes!", // Message to display
+});
+
 // POST: Register a new user
 userRouter.post("/register", RegisterUser);
 
 // POST: Login a user
-userRouter.post("/login", LoginUser);
+userRouter.post("/login", LoginLimiter, LoginUser);
 
 // POST: Logout a user
 userRouter.post("/logout", IsUserAuthenticated, LogoutUser);
