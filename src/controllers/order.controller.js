@@ -1,5 +1,7 @@
 // Libraries Imports
 import { StatusCodes } from "http-status-codes";
+import NodeCache from "node-cache";
+const OrdersCache = new NodeCache({ stdTTL: 604800 }); // At Least for 2 Days
 
 // Local Imports
 import { Order } from "../models/order.model.js";
@@ -57,6 +59,11 @@ export const PlaceOrder = async (req, res) => {
       ...req.body,
       deliveryPreference: deliveryPreference,
     });
+
+    OrdersCache.del("allOrders");
+    OrdersCache.del("getOrderById");
+    OrdersCache.del("getAllOrdersOfLoggedInUser");
+
     return res
       .status(StatusCodes.CREATED)
       .send({ order, message: "Your order is placed successfully!" });
@@ -74,12 +81,19 @@ export const GetAllOrdersOfLoggedInUser = async (req, res) => {
         message: "Permission denied you do not have the required role!",
       });
     }
-
-    const orders = await Order.find({ userId: req?.user?._id });
-
-    return res
-      .status(StatusCodes.OK)
-      .send({ orders, message: "Your orders fetched successfully!" });
+    const orders = OrdersCache.get("getAllOrdersOfLoggedInUser");
+    if (orders) {
+      console.log("Cahced...");
+      return res
+        .status(StatusCodes.OK)
+        .send({ orders, message: "Your orders fetched successfully!" });
+    } else {
+      console.log("Not Cahced...");
+      const orders = await Order.find({ userId: req?.user?._id });
+      return res
+        .status(StatusCodes.OK)
+        .send({ orders, message: "Your orders fetched successfully!" });
+    }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -96,10 +110,17 @@ export const GetAllOrders = async (req, res) => {
       });
     }
 
-    const orders = await Order.find();
-    return res
-      .status(StatusCodes.OK)
-      .send({ orders, message: "Orders fetched successfully!" });
+    const orders = OrdersCache.get("allOrders");
+    if (orders) {
+      return res
+        .status(StatusCodes.OK)
+        .send({ orders, message: "Orders fetched successfully!" });
+    } else {
+      const orders = await Order.find();
+      return res
+        .status(StatusCodes.OK)
+        .send({ orders, message: "Orders fetched successfully!" });
+    }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -122,12 +143,17 @@ export const GetSingleOrderById = async (req, res) => {
         .status(StatusCodes.NOT_ACCEPTABLE)
         .send({ message: "Something is missing!" });
     }
-
-    const order = await Order.findById(orderId);
-
-    return res
-      .status(StatusCodes.OK)
-      .send({ order, message: "Order by Id fetched successfully!" });
+    const order = OrdersCache.get("getOrderById");
+    if (order) {
+      return res
+        .status(StatusCodes.OK)
+        .send({ order, message: "Order founded successfully!" });
+    } else {
+      const order = await Order.findById(orderId);
+      return res
+        .status(StatusCodes.OK)
+        .send({ order, message: "Order founded successfully!" });
+    }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -157,6 +183,9 @@ export const UpdateOrderById = async (req, res) => {
         status,
       },
     });
+    OrdersCache.del("allOrders");
+    OrdersCache.del("getOrderById");
+    OrdersCache.del("getAllOrdersOfLoggedInUser");
 
     return res
       .status(StatusCodes.OK)

@@ -22,12 +22,12 @@ app.use(morgan("dev"));
 
 // Using Express Rate Limiter to limit number of requests
 const limiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  limit: 13, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+  windowMs: 1 * 60 * 1000, // 1 minutes
+  limit: 150, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
   standardHeaders: "draft-8", // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
   statusCode: StatusCodes.TOO_MANY_REQUESTS, // Status Code for Too Many Requests
-  message: "Too many requests. Please try again after 5 minutes!", // Message to display
+  message: "Too many requests. Please try again after 1 minutes!", // Message to display
 });
 
 app.use(limiter);

@@ -3,6 +3,8 @@ import { StatusCodes } from "http-status-codes";
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import path from "path";
+import NodeCache from "node-cache";
+const ProductsCache = new NodeCache({ stdTTL: 604800 }); // At Least for 7 Days
 
 // Local Imports
 import {
@@ -21,10 +23,17 @@ import { Product } from "../models/products.model.js";
 
 export const GetAllCategories = async (req, res) => {
   try {
-    const categories = await Product.find().distinct("categoryName");
-    return res
-      .status(StatusCodes.OK)
-      .send({ categories, message: "Categories fetched successfully!" });
+    const categories = ProductsCache.get("getAllCategories");
+    if (categories) {
+      return res
+        .status(StatusCodes.OK)
+        .send({ categories, message: "Categories fetched successfully!" });
+    } else {
+      const categories = await Product.find().distinct("categoryName");
+      return res
+        .status(StatusCodes.OK)
+        .send({ categories, message: "Categories fetched successfully!" });
+    }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -42,13 +51,21 @@ export const GetAllProductsBasedOnCategories = async (req, res) => {
         .send({ message: "Please provide category name!" });
     }
 
-    const products = await Product.find({ categoryName });
-
-    return res.status(StatusCodes.OK).send({
-      products,
-      message:
-        "Product fetched  successfully on the base of respective category!",
-    });
+    const products = ProductsCache.get("getAllProductsBasedOnCategories");
+    if (products) {
+      return res.status(StatusCodes.OK).send({
+        products,
+        message:
+          "Product fetched  successfully on the base of respective category!",
+      });
+    } else {
+      const products = await Product.find({ categoryName });
+      return res.status(StatusCodes.OK).send({
+        products,
+        message:
+          "Product fetched  successfully on the base of respective category!",
+      });
+    }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -90,6 +107,11 @@ export const AddProduct = async (req, res) => {
       image: uploadResult?.url,
     });
 
+    ProductsCache.del("getAllCategories");
+    ProductsCache.del("getAllProductsBasedOnCategories");
+    ProductsCache.del("allProducts");
+    ProductsCache.del("getProductById");
+
     return res.status(StatusCodes.OK).send({
       message: "Product added successfully!",
     });
@@ -102,18 +124,29 @@ export const AddProduct = async (req, res) => {
 
 export const GetAllProducts = async (req, res) => {
   try {
+    // Check if the user has admin privileges
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: "Permission denied! You do not have the required role.",
       });
     }
 
-    const products = await Product.find();
-    return res.status(StatusCodes.OK).send({
-      products,
-      message:
-        "Product fetched  successfully on the base of respective category!",
-    });
+    // Check if products are already in the cache
+    const products = ProductsCache.get("allProducts");
+    if (products) {
+      return res.status(StatusCodes.OK).send({
+        products: products,
+        message: "Products fetched successfully from cache!",
+      });
+    } else {
+      const products = await Product.find();
+      // Store the fetched products in the cache
+      ProductsCache.set("allProducts", products);
+      return res.status(StatusCodes.OK).send({
+        products,
+        message: "Products fetched successfully from the database!",
+      });
+    }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -137,18 +170,25 @@ export const GetProductById = async (req, res) => {
       });
     }
 
-    const product = await Product.findById(productId);
-
-    if (!product) {
-      return res.status(StatusCodes.NOT_FOUND).send({
-        message: "Product not found!",
+    const product = ProductsCache.get("getProductById");
+    if (product) {
+      return res.status(StatusCodes.OK).send({
+        product,
+        message: "Product founded successfully!",
+      });
+    } else {
+      const product = await Product.findById(productId);
+      if (!product) {
+        return res.status(StatusCodes.NOT_FOUND).send({
+          message: "Product not found!",
+        });
+      }
+      ProductsCache.set("getProductById", product);
+      return res.status(StatusCodes.OK).send({
+        product,
+        message: "Product founded successfully!",
       });
     }
-
-    return res.status(StatusCodes.OK).send({
-      product,
-      message: "Product founded successfully!",
-    });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -181,7 +221,7 @@ export const UpdateProductById = async (req, res) => {
       });
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(productId, {
+    await Product.findByIdAndUpdate(productId, {
       $set: {
         name,
         description,
@@ -190,6 +230,12 @@ export const UpdateProductById = async (req, res) => {
         categoryName,
       },
     });
+
+    ProductsCache.del("allProducts");
+    ProductsCache.del("getProductById");
+    ProductsCache.del("getAllCategories");
+    ProductsCache.del("getAllCategories");
+    ProductsCache.del("getAllProductsBasedOnCategories");
 
     return res.status(StatusCodes.OK).send({
       message: "Product updated successfully!",
@@ -226,6 +272,11 @@ export const DeleteProductById = async (req, res) => {
     }
 
     await Product.findByIdAndDelete(productId);
+    ProductsCache.del("allProducts");
+    ProductsCache.del("getProductById");
+    ProductsCache.del("getAllCategories");
+    ProductsCache.del("getAllCategories");
+    ProductsCache.del("getAllProductsBasedOnCategories");
 
     return res.status(StatusCodes.OK).send({
       message: "Product deleted successfully!",
