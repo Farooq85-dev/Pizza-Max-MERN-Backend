@@ -5,7 +5,7 @@ const OrdersCache = new NodeCache({ stdTTL: 604800 }); // At Least for 2 Days
 
 // Local Imports
 import { Order } from "../models/order.model.js";
-import { userRoles } from "../constants.js";
+import { userRoles } from "../constants/constants.js";
 
 export const PlaceOrder = async (req, res) => {
   try {

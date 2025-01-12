@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 
 // Local Imports
-import { COOKIE_OPTIONS, userRoles } from "../constants.js";
+import { COOKIE_OPTIONS, userRoles } from "../constants/constants.js";
 import { User } from "../models/user.model.js";
 import {
   CLOUDINARY_API_KEY,

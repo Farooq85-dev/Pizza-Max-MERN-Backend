@@ -12,7 +12,6 @@ const FilesCleanup = (req, res, next) => {
       }
     });
     next();
-    console.log("Cleanup Middleware chla...");
   } catch (error) {
     console.log(error);
   }
