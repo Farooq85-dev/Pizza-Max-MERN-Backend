@@ -264,7 +264,6 @@ export const DeleteProductById = async (req, res) => {
     }
 
     const product = await Product.findById(productId);
-
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).send({
         message: "Product not found!",

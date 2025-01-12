@@ -15,11 +15,11 @@ const FileUplaoder = async (req, res, next) => {
       });
     }
 
-    // if (req?.file?.size > 100000) {
-    //   return res.status(StatusCodes.NOT_ACCEPTABLE).send({
-    //     message: "File must be lower than 100 KB!",
-    //   });
-    // }
+    if (req?.file?.size > 100000) {
+      return res.status(StatusCodes.NOT_ACCEPTABLE).send({
+        message: "File must be lower than 100 KB!",
+      });
+    }
 
     req.file = req?.file;
     next();
