@@ -250,6 +250,7 @@ export const UpdateProductById = async (req, res) => {
 export const DeleteProductById = async (req, res) => {
   try {
     const { productId } = req.params;
+    const { productImgId } = req.body;
 
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
@@ -261,6 +262,23 @@ export const DeleteProductById = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).send({
         message: "Something is missing!",
       });
+    }
+
+    const match = productImgId.match(/\/([^\/]+)\/([^\/]+)\.webp$/);
+    if (match && match[1] && match[2]) {
+      const folderName = match[1];
+      const fileName = match[2];
+      const id = `${folderName}/${fileName}`;
+
+      const result = await cloudinary.uploader.destroy(id, {
+        invalidate: true,
+      });
+
+      if (result.result === "not found") {
+        return res.status(StatusCodes.NOT_FOUND).send({
+          message: "Invalid product Img!",
+        });
+      }
     }
 
     const product = await Product.findById(productId);
