@@ -3,8 +3,10 @@ import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
 
 // Local Imports
-import { ACCESS_TOKEN_SECRET } from "../secrets/secrets.js";
 import { User } from "../models/user.model.js";
+import { ACCESS_TOKEN_SECRET } from "../secrets/secrets.js";
+import { invalidToken, tokenNotFound } from "../messages/auth.message.js";
+import { serverError } from "../messages/global.message.js";
 
 const IsUserAuthenticated = async (req, res, next) => {
   try {
@@ -15,7 +17,7 @@ const IsUserAuthenticated = async (req, res, next) => {
     if (!token) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
-        .send({ message: "Access token is required. Please login!" });
+        .send({ message: tokenNotFound });
     }
 
     let decodedToken;
@@ -24,11 +26,11 @@ const IsUserAuthenticated = async (req, res, next) => {
     } catch (error) {
       if (error.name === "TokenExpiredError") {
         return res.status(StatusCodes.UNAUTHORIZED).send({
-          message: "Token expired. Please login again!",
+          message: invalidToken,
         });
       }
       return res.status(StatusCodes.UNAUTHORIZED).send({
-        message: "Invalid token. Please login again!",
+        message: invalidToken,
       });
     }
 
@@ -37,23 +39,20 @@ const IsUserAuthenticated = async (req, res, next) => {
       user = await User.findById(decodedToken?.id);
     } catch (dbError) {
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: "Error fetching user data. Please try again later!",
+        message: serverError,
       });
     }
 
     if (!user) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .send({ message: "User not found. Invalid token!" });
+      return res.status(StatusCodes.NOT_FOUND).send({ message: invalidToken });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    console.error("Authentication error:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: "An unexpected error occurred. Please try again!" });
+      .send({ message: serverError });
   }
 };
 
