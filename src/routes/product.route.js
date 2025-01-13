@@ -5,7 +5,6 @@ import { Router } from "express";
 import {
   AddProduct,
   GetAllProductsBasedOnCategories,
-  GetProductById,
   DeleteProductById,
   GetAllCategories,
   GetAllProducts,
@@ -42,13 +41,6 @@ productRouter.post(
 
 // GET: Admin route to get all products
 productRouter.get("/admin/products", IsUserAuthenticated, GetAllProducts);
-
-// GET: Admin route to get a single product by ID
-productRouter.get(
-  "/admin/product/:productId",
-  IsUserAuthenticated,
-  GetProductById
-);
 
 // GET: Admin route to Update product by ID
 productRouter.put(

@@ -1,11 +1,32 @@
 // Libraries Imports
-import { StatusCodes } from "http-status-codes";
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import { StatusCodes } from "http-status-codes";
 import path from "path";
 
 // Local Imports
 import { COOKIE_OPTIONS, userRoles } from "../constants/constants.js";
+import {
+  permissionDenied,
+  serverError,
+  somethingMissing,
+} from "../messages/global.message.js";
+import {
+  avatarUploaded,
+  deletePreviousImg,
+  imageUploaded,
+  invalidAvatar,
+  passwordChanged,
+  providedPasswordNotCorrect,
+  provideNewName,
+  provideNewPassword,
+  updateName,
+  userAlreadyExists,
+  userLogin,
+  userLogout,
+  userNotRegisteredYet,
+  userRegistered,
+} from "../messages/user.message.js";
 import { User } from "../models/user.model.js";
 import {
   CLOUDINARY_API_KEY,
@@ -31,10 +52,7 @@ const assignAccessAndRefereshTokens = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
-    throw new Error(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      "Something went wrong while assigning referesh and access token"
-    );
+    throw new Error(StatusCodes.INTERNAL_SERVER_ERROR, serverError);
   }
 };
 
@@ -45,7 +63,7 @@ export const RegisterUser = async (req, res) => {
     if (!name || !email || !password) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "Something is missing!" });
+        .send({ message: somethingMissing });
     }
 
     const isUserAlreadyExist = await User.findOne({ email });
@@ -53,19 +71,16 @@ export const RegisterUser = async (req, res) => {
     if (isUserAlreadyExist) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "You are already resgistered. Please Login!" });
+        .send({ message: userAlreadyExists });
     }
 
     const user = await User.create(req.body);
 
-    return res
-      .status(StatusCodes.OK)
-      .send({ user, message: "User registered successfully!" });
+    return res.status(StatusCodes.OK).send({ user, message: UserRegistered });
   } catch (error) {
-    console.log(error.message);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error.message });
+      .send({ message: serverError });
   }
 };
 
@@ -75,13 +90,13 @@ export const LoginUser = async (req, res) => {
     if (!email || !password) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "Something is missing!" });
+        .send({ message: somethingMissing });
     }
     const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).send({
-        message: "You are not resgistered yet. Please register yourself first!",
+        message: userNotRegisteredYet,
       });
     }
 
@@ -89,8 +104,7 @@ export const LoginUser = async (req, res) => {
 
     if (!isPasswordValid) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message:
-          "Provided password is not correct. Please provide correct password!",
+        message: providedPasswordNotCorrect,
       });
     }
 
@@ -103,13 +117,12 @@ export const LoginUser = async (req, res) => {
       .cookie("accessToken", accessToken, COOKIE_OPTIONS)
       .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
       .send({
-        message: "You have been login successfully!",
+        message: userLogin,
       });
   } catch (error) {
-    console.log(error.message);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error.message });
+      .send({ message: serverError });
   }
 };
 
@@ -117,29 +130,25 @@ export const LogoutUser = async (req, res) => {
   try {
     if (!userRoles.includes(req?.user?.role)) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
-    await User.findByIdAndUpdate(
-      req?.user?._id,
-      {
-        $unset: {
-          refreshToken: 1, // Clear field from this user
-        },
+    await User.findByIdAndUpdate(req?.user?._id, {
+      $unset: {
+        refreshToken: 1, // Clear field from this user
       },
-      { new: true }
-    );
+    });
 
     return res
       .status(StatusCodes.OK)
       .clearCookie("accessToken", COOKIE_OPTIONS)
       .clearCookie("refreshToken", COOKIE_OPTIONS)
-      .send({ message: "You have been logout successfully!" });
+      .send({ message: userLogout });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error.message });
+      .send({ message: serverError });
   }
 };
 
@@ -149,40 +158,40 @@ export const ChangePassword = async (req, res) => {
 
     if (!userRoles.includes(req?.user?.role)) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (!currentPassword || !newPassword) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "Something is missing!" });
+        .send({ message: somethingMissing });
     }
 
     const isPasswordValid = await req?.user?.isPasswordCorrect(currentPassword);
 
     if (!isPasswordValid) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Provided password is wrong. Please provide correct pasword!",
+        message: providedPasswordNotCorrect,
       });
     }
 
     if (await req.user?.isPasswordCorrect(newPassword)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "Please provide a new password!" });
+        .send({ message: provideNewPassword });
     }
 
     req.user.password = newPassword;
     await req.user.save();
 
     return res.status(StatusCodes.OK).send({
-      message: "Your password is changed successfully!",
+      message: passwordChanged,
     });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error.message });
+      .send({ message: serverError });
   }
 };
 
@@ -191,14 +200,14 @@ export const UploadAvatar = async (req, res) => {
     console.log(req.uploadedFiles);
     if (!userRoles.includes(req?.user?.role)) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (req?.user?.avatar) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "Please delete your previous image first!" });
+        .send({ message: deletePreviousImg });
     }
 
     const filePath = path.join(req?.file?.destination, req?.file?.filename);
@@ -225,13 +234,11 @@ export const UploadAvatar = async (req, res) => {
       }
     );
 
-    return res
-      .status(StatusCodes.OK)
-      .send({ message: "Your image is uplaoded!" });
+    return res.status(StatusCodes.OK).send({ message: avatarUploaded });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error.message });
+      .send({ message: serverError });
   }
 };
 
@@ -241,20 +248,20 @@ export const UpdateName = async (req, res) => {
 
     if (!userRoles.includes(req?.user?.role)) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (!name) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "Please enter name!" });
+        .send({ message: somethingMissing });
     }
 
     if (name === (await req?.user?.name)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "Please provide a new name!" });
+        .send({ message: provideNewName });
     }
 
     await User.findByIdAndUpdate(req?.user?._id, {
@@ -263,13 +270,11 @@ export const UpdateName = async (req, res) => {
       },
     });
 
-    return res
-      .status(StatusCodes.OK)
-      .send({ message: "Your name is saved successfully!" });
+    return res.status(StatusCodes.OK).send({ message: updateName });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error.message });
+      .send({ message: serverError });
   }
 };
 
@@ -316,13 +321,13 @@ export const DeleteAvatar = async (req, res) => {
 
     if (!userRoles.includes(req?.user?.role)) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (!avatarPublicId || typeof avatarPublicId !== "string") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Something is missing!",
+        message: somethingMissing,
       });
     }
 
@@ -338,7 +343,7 @@ export const DeleteAvatar = async (req, res) => {
 
       if (result.result === "not found") {
         return res.status(StatusCodes.NOT_FOUND).send({
-          message: "Invalid avatar!",
+          message: invalidAvatar,
         });
       }
     }
@@ -349,13 +354,11 @@ export const DeleteAvatar = async (req, res) => {
       },
     });
 
-    return res
-      .status(StatusCodes.OK)
-      .send({ message: "Your picture is deleted successfully!" });
+    return res.status(StatusCodes.OK).send({ message: imageUploaded });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -364,16 +367,14 @@ export const GetAllUsers = async (req, res) => {
   try {
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     const users = await User.find().select("-password");
 
-    return res
-      .status(StatusCodes.OK)
-      .send({ users, message: "Users fetched successfully!" });
+    return res.status(StatusCodes.OK).send({ users, message: usersFounded });
   } catch (error) {
-    return res.status(StatusCodes.OK).send({ message: error?.message });
+    return res.status(StatusCodes.OK).send({ message: serverError });
   }
 };

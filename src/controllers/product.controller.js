@@ -12,6 +12,23 @@ import {
   CLOUDINARY_API_SECRET,
   CLOUDINARY_CLOUD_NAME,
 } from "../secrets/secrets.js";
+import { Product } from "../models/products.model.js";
+import {
+  categoriesFounded,
+  invalidProductImg,
+  productAdded,
+  ProductDeleted,
+  productFounded,
+  productNotFound,
+  productsFounded,
+  productsOnCategory,
+  productUpdate,
+} from "../messages/product.messages.js";
+import {
+  permissionDenied,
+  serverError,
+  somethingMissing,
+} from "../messages/global.message.js";
 
 // Clodinary Configs
 cloudinary.config({
@@ -19,25 +36,25 @@ cloudinary.config({
   api_key: CLOUDINARY_API_KEY,
   api_secret: CLOUDINARY_API_SECRET,
 });
-import { Product } from "../models/products.model.js";
 
 export const GetAllCategories = async (req, res) => {
   try {
     const categories = ProductsCache.get("getAllCategories");
+
     if (categories) {
       return res
         .status(StatusCodes.OK)
-        .send({ categories, message: "Categories fetched successfully!" });
+        .send({ categories, message: categoriesFounded });
     } else {
       const categories = await Product.find().distinct("categoryName");
       return res
         .status(StatusCodes.OK)
-        .send({ categories, message: "Categories fetched successfully!" });
+        .send({ categories, message: categories });
     }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -48,28 +65,26 @@ export const GetAllProductsBasedOnCategories = async (req, res) => {
     if (!categoryName) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .send({ message: "Please provide category name!" });
+        .send({ message: somethingMissing });
     }
 
     const products = ProductsCache.get("getAllProductsBasedOnCategories");
     if (products) {
       return res.status(StatusCodes.OK).send({
         products,
-        message:
-          "Product fetched  successfully on the base of respective category!",
+        message: productsOnCategory,
       });
     } else {
       const products = await Product.find({ categoryName });
       return res.status(StatusCodes.OK).send({
         products,
-        message:
-          "Product fetched  successfully on the base of respective category!",
+        message: productsOnCategory,
       });
     }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -80,13 +95,13 @@ export const AddProduct = async (req, res) => {
 
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (!name || !description || !price || !stock || !categoryName) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Something is missing!",
+        message: somethingMissing,
       });
     }
 
@@ -113,86 +128,41 @@ export const AddProduct = async (req, res) => {
     ProductsCache.del("getProductById");
 
     return res.status(StatusCodes.OK).send({
-      message: "Product added successfully!",
+      message: productAdded,
     });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
 export const GetAllProducts = async (req, res) => {
   try {
-    // Check if the user has admin privileges
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied! You do not have the required role.",
+        message: permissionDenied,
       });
     }
 
-    // Check if products are already in the cache
     const products = ProductsCache.get("allProducts");
     if (products) {
       return res.status(StatusCodes.OK).send({
         products: products,
-        message: "Products fetched successfully from cache!",
+        message: productsFounded,
       });
     } else {
       const products = await Product.find();
-      // Store the fetched products in the cache
       ProductsCache.set("allProducts", products);
       return res.status(StatusCodes.OK).send({
         products,
-        message: "Products fetched successfully from the database!",
+        message: productsFounded,
       });
     }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
-  }
-};
-
-export const GetProductById = async (req, res) => {
-  try {
-    const { productId } = req.params;
-
-    if (req?.user?.role !== "admin") {
-      return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
-      });
-    }
-
-    if (!productId) {
-      return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Something is missing!",
-      });
-    }
-
-    const product = ProductsCache.get("getProductById");
-    if (product) {
-      return res.status(StatusCodes.OK).send({
-        product,
-        message: "Product founded successfully!",
-      });
-    } else {
-      const product = await Product.findById(productId);
-      if (!product) {
-        return res.status(StatusCodes.NOT_FOUND).send({
-          message: "Product not found!",
-        });
-      }
-      ProductsCache.set("getProductById", product);
-      return res.status(StatusCodes.OK).send({
-        product,
-        message: "Product founded successfully!",
-      });
-    }
-  } catch (error) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -203,13 +173,13 @@ export const UpdateProductById = async (req, res) => {
 
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (!productId) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Something is missing!",
+        message: somethingMissing,
       });
     }
 
@@ -217,7 +187,7 @@ export const UpdateProductById = async (req, res) => {
 
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).send({
-        message: "Product not found!",
+        message: productNotFound,
       });
     }
 
@@ -238,12 +208,12 @@ export const UpdateProductById = async (req, res) => {
     ProductsCache.del("getAllProductsBasedOnCategories");
 
     return res.status(StatusCodes.OK).send({
-      message: "Product updated successfully!",
+      message: productUpdate,
     });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -254,13 +224,13 @@ export const DeleteProductById = async (req, res) => {
 
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (!productId) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Something is missing!",
+        message: somethingMissing,
       });
     }
 
@@ -276,7 +246,7 @@ export const DeleteProductById = async (req, res) => {
 
       if (result.result === "not found") {
         return res.status(StatusCodes.NOT_FOUND).send({
-          message: "Invalid product Img!",
+          message: invalidProductImg,
         });
       }
     }
@@ -284,7 +254,7 @@ export const DeleteProductById = async (req, res) => {
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).send({
-        message: "Product not found!",
+        message: productNotFound,
       });
     }
 
@@ -296,11 +266,11 @@ export const DeleteProductById = async (req, res) => {
     ProductsCache.del("getAllProductsBasedOnCategories");
 
     return res.status(StatusCodes.OK).send({
-      message: "Product deleted successfully!",
+      message: ProductDeleted,
     });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };

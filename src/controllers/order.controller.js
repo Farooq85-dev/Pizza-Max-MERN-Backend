@@ -6,6 +6,16 @@ const OrdersCache = new NodeCache({ stdTTL: 604800 }); // At Least for 2 Days
 // Local Imports
 import { Order } from "../models/order.model.js";
 import { userRoles } from "../constants/constants.js";
+import {
+  orderPlaced,
+  ordersFounded,
+  orderFounded,
+} from "../messages/order.message.js";
+import {
+  permissionDenied,
+  serverError,
+  somethingMissing,
+} from "../messages/global.message.js";
 
 export const PlaceOrder = async (req, res) => {
   try {
@@ -25,7 +35,7 @@ export const PlaceOrder = async (req, res) => {
 
     if (!userRoles.includes(req?.user?.role)) {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
@@ -44,7 +54,7 @@ export const PlaceOrder = async (req, res) => {
     ) {
       return res
         .status(StatusCodes.NOT_ACCEPTABLE)
-        .send({ message: "Something is missing!" });
+        .send({ message: somethingMissing });
     }
 
     if (deliveryPreference === 100) {
@@ -66,11 +76,11 @@ export const PlaceOrder = async (req, res) => {
 
     return res
       .status(StatusCodes.CREATED)
-      .send({ order, message: "Your order is placed successfully!" });
+      .send({ order, message: orderPlaced });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -78,26 +88,24 @@ export const GetAllOrdersOfLoggedInUser = async (req, res) => {
   try {
     if (req?.user?.role !== "user") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
     const orders = OrdersCache.get("getAllOrdersOfLoggedInUser");
     if (orders) {
-      console.log("Cahced...");
       return res
         .status(StatusCodes.OK)
-        .send({ orders, message: "Your orders fetched successfully!" });
+        .send({ orders, message: ordersFounded });
     } else {
-      console.log("Not Cahced...");
       const orders = await Order.find({ userId: req?.user?._id });
       return res
         .status(StatusCodes.OK)
-        .send({ orders, message: "Your orders fetched successfully!" });
+        .send({ orders, message: ordersFounded });
     }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -106,7 +114,7 @@ export const GetAllOrders = async (req, res) => {
   try {
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
@@ -114,17 +122,17 @@ export const GetAllOrders = async (req, res) => {
     if (orders) {
       return res
         .status(StatusCodes.OK)
-        .send({ orders, message: "Orders fetched successfully!" });
+        .send({ orders, message: ordersFounded });
     } else {
       const orders = await Order.find();
       return res
         .status(StatusCodes.OK)
-        .send({ orders, message: "Orders fetched successfully!" });
+        .send({ orders, message: ordersFounded });
     }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -134,30 +142,26 @@ export const GetSingleOrderById = async (req, res) => {
 
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (!orderId) {
       return res
         .status(StatusCodes.NOT_ACCEPTABLE)
-        .send({ message: "Something is missing!" });
+        .send({ message: somethingMissing });
     }
     const order = OrdersCache.get("getOrderById");
     if (order) {
-      return res
-        .status(StatusCodes.OK)
-        .send({ order, message: "Order founded successfully!" });
+      return res.status(StatusCodes.OK).send({ order, message: orderFounded });
     } else {
       const order = await Order.findById(orderId);
-      return res
-        .status(StatusCodes.OK)
-        .send({ order, message: "Order founded successfully!" });
+      return res.status(StatusCodes.OK).send({ order, message: orderFounded });
     }
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
 
@@ -168,14 +172,14 @@ export const UpdateOrderById = async (req, res) => {
 
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
-        message: "Permission denied you do not have the required role!",
+        message: permissionDenied,
       });
     }
 
     if (!status || !orderId) {
       return res
         .status(StatusCodes.NOT_ACCEPTABLE)
-        .send({ message: "Something is missing!" });
+        .send({ message: somethingMissing });
     }
 
     await Order.findByIdAndUpdate(orderId, {
@@ -193,6 +197,6 @@ export const UpdateOrderById = async (req, res) => {
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: error?.message });
+      .send({ message: serverError });
   }
 };
