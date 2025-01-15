@@ -26,6 +26,7 @@ import {
   userLogout,
   userNotRegisteredYet,
   userRegistered,
+  usersFounded,
 } from "../messages/user.message.js";
 import { User } from "../models/user.model.js";
 import {
@@ -76,7 +77,7 @@ export const RegisterUser = async (req, res) => {
 
     const user = await User.create(req.body);
 
-    return res.status(StatusCodes.OK).send({ user, message: UserRegistered });
+    return res.status(StatusCodes.OK).send({ user, message: userRegistered });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
