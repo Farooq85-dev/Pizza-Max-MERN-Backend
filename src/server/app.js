@@ -55,13 +55,6 @@ app.use(cookieParser());
 // Using Cookie Parser To Parse Cookies
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
-// No Routes Foud
-app.use((_, res) => {
-  return res
-    .status(StatusCodes.NOT_FOUND)
-    .send({ message: "No Routes Found!" });
-});
-
 // Hello From Server
 app.get("/api/v1/server", (_, res) => {
   res.status(StatusCodes.OK).send({ message: "Server is running fine!" });
@@ -69,6 +62,13 @@ app.get("/api/v1/server", (_, res) => {
 
 //Creating Main Route For All Request
 app.use("/api/v1/", router);
+
+// No Routes Foud
+app.use((_, res) => {
+  return res
+    .status(StatusCodes.NOT_FOUND)
+    .send({ message: "No Routes Found!" });
+});
 
 // Exporting Main App
 export { app };
