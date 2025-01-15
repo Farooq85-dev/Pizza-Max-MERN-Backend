@@ -1,8 +1,8 @@
 // Libraries Imports
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
+// import fs from "fs";
 import { StatusCodes } from "http-status-codes";
-import path from "path";
+// import path from "path";
 
 // Local Imports
 import { COOKIE_OPTIONS, userRoles } from "../constants/constants.js";
@@ -198,7 +198,9 @@ export const ChangePassword = async (req, res) => {
 
 export const UploadAvatar = async (req, res) => {
   try {
-    console.log(req.uploadedFiles);
+    const { userAvatar } = req.body;
+    console.log(userAvatar);
+
     if (!userRoles.includes(req?.user?.role)) {
       return res.status(StatusCodes.BAD_REQUEST).send({
         message: permissionDenied,
@@ -211,31 +213,72 @@ export const UploadAvatar = async (req, res) => {
         .send({ message: deletePreviousImg });
     }
 
-    const filePath = path.join(req?.file?.destination, req?.file?.filename);
-    const uploadResult = await cloudinary.uploader.upload(filePath, {
-      folder: "Pizza-Max-App",
-      transformation: [
-        { width: 800, crop: "scale" },
-        { fetch_format: "webp" },
-        { quality: "auto:low" },
-      ],
+    // const filePath = path.join(req?.file?.destination, req?.file?.filename);
+    // const uploadResult = await cloudinary.uploader.upload(filePath, {
+    //   folder: "Pizza-Max-App",
+    //   transformation: [
+    //     { width: 800, crop: "scale" },
+    //     { fetch_format: "webp" },
+    //     { quality: "auto:low" },
+    //   ],
+    // });
+
+    // fs.unlinkSync(filePath);
+
+    await User.findByIdAndUpdate(req.user?._id, {
+      $set: {
+        avatar: userAvatar,
+      },
     });
 
-    fs.unlinkSync(filePath);
-
-    await User.findByIdAndUpdate(
-      req.user?._id,
-      {
-        $set: {
-          avatar: uploadResult?.url,
-        },
-      },
-      {
-        new: true,
-      }
-    );
-
     return res.status(StatusCodes.OK).send({ message: avatarUploaded });
+  } catch (error) {
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .send({ message: serverError });
+  }
+};
+
+export const DeleteAvatar = async (req, res) => {
+  try {
+    const { avatarPublicId } = req.body;
+
+    if (!userRoles.includes(req?.user?.role)) {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: permissionDenied,
+      });
+    }
+
+    if (!avatarPublicId || typeof avatarPublicId !== "string") {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: somethingMissing,
+      });
+    }
+
+    const match = avatarPublicId.match(/\/([^\/]+)\/([^\/]+)\.webp$/);
+    if (match && match[1] && match[2]) {
+      const folderName = match[1];
+      const fileName = match[2];
+      const id = `${folderName}/${fileName}`;
+
+      const result = await cloudinary.uploader.destroy(id, {
+        invalidate: true,
+      });
+
+      if (result.result === "not found") {
+        return res.status(StatusCodes.NOT_FOUND).send({
+          message: invalidAvatar,
+        });
+      }
+    }
+
+    await User.findByIdAndUpdate(req?.user?._id, {
+      $unset: {
+        avatar: 1, // Clear this field from user
+      },
+    });
+
+    return res.status(StatusCodes.OK).send({ message: imageUploaded });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -313,53 +356,6 @@ export const AddAnotherEmail = async (req, res) => {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .send({ message: error.message });
-  }
-};
-
-export const DeleteAvatar = async (req, res) => {
-  try {
-    const { avatarPublicId } = req.body;
-
-    if (!userRoles.includes(req?.user?.role)) {
-      return res.status(StatusCodes.BAD_REQUEST).send({
-        message: permissionDenied,
-      });
-    }
-
-    if (!avatarPublicId || typeof avatarPublicId !== "string") {
-      return res.status(StatusCodes.BAD_REQUEST).send({
-        message: somethingMissing,
-      });
-    }
-
-    const match = avatarPublicId.match(/\/([^\/]+)\/([^\/]+)\.webp$/);
-    if (match && match[1] && match[2]) {
-      const folderName = match[1];
-      const fileName = match[2];
-      const id = `${folderName}/${fileName}`;
-
-      const result = await cloudinary.uploader.destroy(id, {
-        invalidate: true,
-      });
-
-      if (result.result === "not found") {
-        return res.status(StatusCodes.NOT_FOUND).send({
-          message: invalidAvatar,
-        });
-      }
-    }
-
-    await User.findByIdAndUpdate(req?.user?._id, {
-      $unset: {
-        avatar: 1, // Clear this field from user
-      },
-    });
-
-    return res.status(StatusCodes.OK).send({ message: imageUploaded });
-  } catch (error) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ message: serverError });
   }
 };
 

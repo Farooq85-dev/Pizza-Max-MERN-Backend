@@ -1,8 +1,8 @@
 // Libraries Imports
 import { StatusCodes } from "http-status-codes";
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
-import path from "path";
+// import fs from "fs";
+// import path from "path";
 import NodeCache from "node-cache";
 const ProductsCache = new NodeCache({ stdTTL: 604800 }); // At Least for 7 Days
 
@@ -18,7 +18,6 @@ import {
   invalidProductImg,
   productAdded,
   ProductDeleted,
-  productFounded,
   productNotFound,
   productsFounded,
   productsOnCategory,
@@ -91,7 +90,8 @@ export const GetAllProductsBasedOnCategories = async (req, res) => {
 // Admin
 export const AddProduct = async (req, res) => {
   try {
-    const { name, description, price, stock, categoryName } = req.body;
+    const { image, name, description, price, stock, categoryName } = req.body;
+    console.log(req.body);
 
     if (req?.user?.role !== "admin") {
       return res.status(StatusCodes.BAD_REQUEST).send({
@@ -99,28 +99,25 @@ export const AddProduct = async (req, res) => {
       });
     }
 
-    if (!name || !description || !price || !stock || !categoryName) {
+    if (!image || !name || !description || !price || !stock || !categoryName) {
       return res.status(StatusCodes.BAD_REQUEST).send({
         message: somethingMissing,
       });
     }
 
-    const filePath = path.join(req?.file?.destination, req?.file?.filename);
-    const uploadResult = await cloudinary.uploader.upload(filePath, {
-      folder: "Pizza-Max-App",
-      transformation: [
-        { width: 800, crop: "scale" },
-        { fetch_format: "webp" },
-        { quality: "auto:low" },
-      ],
-    });
+    // const filePath = path.join(req?.file?.destination, req?.file?.filename);
+    // const uploadResult = await cloudinary.uploader.upload(filePath, {
+    //   folder: "Pizza-Max-App",
+    //   transformation: [
+    //     { width: 800, crop: "scale" },
+    //     { fetch_format: "webp" },
+    //     { quality: "auto:low" },
+    //   ],
+    // });
 
-    fs.unlinkSync(filePath);
+    // fs.unlinkSync(filePath);
 
-    await Product.create({
-      ...req.body,
-      image: uploadResult?.url,
-    });
+    await Product.create(req.body);
 
     ProductsCache.del("getAllCategories");
     ProductsCache.del("getAllProductsBasedOnCategories");
