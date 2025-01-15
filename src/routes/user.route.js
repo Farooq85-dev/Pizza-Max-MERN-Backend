@@ -23,11 +23,11 @@ import IsUserAuthenticated from "../middlewares/auth.middleware.js";
 // User Middlware
 import IsUserExist from "../middlewares/isUser.middleware.js";
 // Upload Moddliware
-import Multer from "../middlewares/multer.middleware.js";
+// import Multer from "../middlewares/multer.middleware.js";
 // File Uploader Middleware
-import FileUplaoder from "../middlewares/file.middleware.js";
+// import FileUplaoder from "../middlewares/file.middleware.js";
 // Files Cleanup Middleware
-import FilesCleanup from "../middlewares/filesCleanup.middleware.js";
+// import FilesCleanup from "../middlewares/filesCleanup.middleware.js";
 
 // Mini User Router
 const userRouter = Router();
@@ -66,14 +66,16 @@ userRouter.put("/password", IsUserAuthenticated, ChangePassword);
 userRouter.post("/email", IsUserAuthenticated, AddAnotherEmail);
 
 // POST: Upload user avatar (profile picture)
-userRouter.post(
-  "/avatar/upload",
-  IsUserAuthenticated,
-  Multer.single("userAvatar"),
-  FileUplaoder,
-  FilesCleanup,
-  UploadAvatar
-);
+// userRouter.post(
+//   "/avatar/upload",
+//   IsUserAuthenticated,
+//   Multer.single("userAvatar"),
+//   FileUplaoder,
+//   FilesCleanup,
+//   UploadAvatar
+// );
+
+userRouter.post("/avatar/upload", IsUserAuthenticated, UploadAvatar);
 
 // DELETE: Delete user avatar (remove profile picture)
 userRouter.delete("/avatar", IsUserAuthenticated, DeleteAvatar);

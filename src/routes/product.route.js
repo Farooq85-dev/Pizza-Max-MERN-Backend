@@ -14,11 +14,11 @@ import {
 // Auth Middlware
 import IsUserAuthenticated from "../middlewares/auth.middleware.js";
 // Upload Moddliware
-import Multer from "../middlewares/multer.middleware.js";
+// import Multer from "../middlewares/multer.middleware.js";
 // File Uploader
-import FileUplaoder from "../middlewares/file.middleware.js";
+// import FileUplaoder from "../middlewares/file.middleware.js";
 // Files Cleanup Middleware
-import FilesCleanup from "../middlewares/filesCleanup.middleware.js";
+// import FilesCleanup from "../middlewares/filesCleanup.middleware.js";
 
 // Mini Product Router
 const productRouter = Router();
@@ -30,14 +30,16 @@ productRouter.get("/categories", GetAllCategories);
 productRouter.get("/products/:categoryName", GetAllProductsBasedOnCategories);
 
 // POST: Admin route to add a new product
-productRouter.post(
-  "/admin/product/add",
-  IsUserAuthenticated,
-  Multer.single("productImage"),
-  FileUplaoder,
-  FilesCleanup,
-  AddProduct
-);
+// productRouter.post(
+//   "/admin/product/add",
+//   IsUserAuthenticated,
+//   Multer.single("productImage"),
+//   FileUplaoder,
+//   FilesCleanup,
+//   AddProduct
+// );
+
+productRouter.post("/admin/product/add", IsUserAuthenticated, AddProduct);
 
 // GET: Admin route to get all products
 productRouter.get("/admin/products", IsUserAuthenticated, GetAllProducts);
